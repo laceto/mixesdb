@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+
+# scraper output data (regenerate via the scripts)
+*.csv
