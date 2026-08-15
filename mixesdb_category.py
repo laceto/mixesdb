@@ -41,7 +41,7 @@ def url_to_category_title(value: str) -> str:
 
 
 def list_category_members(category: str, limit: int | None = None) -> list[dict]:
-    """Return [{title, url, namespace}] for every page in the category (subcategories excluded)."""
+    """Return [{title, url}] for every page in the category (subcategories excluded)."""
     cmtitle = category if category.startswith("Category:") else f"Category:{category}"
     members = []
     cmcontinue = None

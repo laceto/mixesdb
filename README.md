@@ -11,7 +11,7 @@ and `action=raw` endpoints.
 ```
 python -m venv venv
 venv\Scripts\activate          # PowerShell: venv\Scripts\Activate.ps1
-pip install jupyter pandas     # only needed for the notebook
+pip install jupyter pandas openpyxl     # only needed for the notebook
 ```
 
 The three `.py` scripts use only the standard library — no dependencies
@@ -90,9 +90,11 @@ python mixesdb_tracklist.py "<url>" --out tracklist.csv
 
 Imports `search()` and `get_tracklist()` directly from the two modules above
 (no duplicated logic). Prompts for a search word, finds matching mixes
-(title-only match), fetches and prints the tracklist for each, and saves the
-combined result to `<query>_tracklists.csv` with columns
-`mix_title, mix_url, part, position, timestamp, artist, title, raw`.
+(title-only match), fetches and prints the tracklist for each, and optionally
+saves every mix's tracklist to its own sheet in a single
+`<query>_tracklists.xlsx` workbook (sheet name derived from the mix title,
+sanitized/truncated/deduplicated to fit Excel's 31-character sheet-name
+limit) with columns `part, position, timestamp, artist, title, raw`.
 
 A `REQUEST_DELAY = 0.5` pause runs between each per-mix tracklist fetch
 (`max_mixes` controls how many matching mixes it fetches, default 20) so a
