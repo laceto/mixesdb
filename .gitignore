@@ -4,3 +4,14 @@ __pycache__/
 
 # scraper output data (regenerate via the scripts)
 *.csv
+*.xlsx
+~$*.xlsx
+
+# Python packaging / test artefacts
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/

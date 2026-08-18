@@ -1,7 +1,6 @@
-"""List all mix pages under a MixesDB category.
+"""CLI: list all mix pages under a MixesDB category.
 
-Uses the MediaWiki action API (list=categorymembers) to enumerate every
-page in a category, e.g. https://www.mixesdb.com/w/Category:Richie_Hawtin
+Thin wrapper over the mixesdb package's list_category_members().
 
 Usage:
     python mixesdb_category.py "https://www.mixesdb.com/w/Category:Richie_Hawtin"
@@ -11,69 +10,17 @@ Usage:
 import argparse
 import csv
 import sys
-import time
-import urllib.parse
-import urllib.request
-import json
 
-API_URL = "https://www.mixesdb.com/w/api.php"
-BASE_PAGE_URL = "https://www.mixesdb.com/w/"
-USER_AGENT = "Mozilla/5.0 (compatible; mixesdb-scraper/1.0)"
-MAX_PER_REQUEST = 500
+from mixesdb.category import list_category_members, url_to_category_title
 
+# Windows consoles often use a legacy codepage (e.g. CP850) that can't encode
+# accented characters common in mix titles (e.g. "Sven Väth"), which raises
+# UnicodeEncodeError on print(). Force UTF-8 with a safe fallback. Not all
+# stdout streams support reconfigure() (e.g. Jupyter's), so this is best-effort.
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 except AttributeError:
     pass
-
-
-def title_to_url(title: str) -> str:
-    return BASE_PAGE_URL + urllib.parse.quote(title.replace(" ", "_"), safe="/:@,()!'&+")
-
-
-def url_to_category_title(value: str) -> str:
-    """Accept either a full category URL or a bare 'Category:Name' string."""
-    if value.startswith("http"):
-        path = urllib.parse.urlparse(value).path
-        title = path.split("/w/", 1)[-1]
-        return urllib.parse.unquote(title).replace("_", " ")
-    return value
-
-
-def list_category_members(category: str, limit: int | None = None) -> list[dict]:
-    """Return [{title, url}] for every page in the category (subcategories excluded)."""
-    cmtitle = category if category.startswith("Category:") else f"Category:{category}"
-    members = []
-    cmcontinue = None
-
-    while True:
-        params = {
-            "action": "query",
-            "list": "categorymembers",
-            "cmtitle": cmtitle,
-            "cmlimit": MAX_PER_REQUEST,
-            "cmtype": "page",
-            "format": "json",
-        }
-        if cmcontinue:
-            params["cmcontinue"] = cmcontinue
-
-        url = f"{API_URL}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-
-        for m in data.get("query", {}).get("categorymembers", []):
-            members.append({"title": m["title"], "url": title_to_url(m["title"])})
-            if limit and len(members) >= limit:
-                return members
-
-        cmcontinue = data.get("continue", {}).get("cmcontinue")
-        if not cmcontinue:
-            break
-        time.sleep(0.2)
-
-    return members
 
 
 def main():

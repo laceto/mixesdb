@@ -1,0 +1,6 @@
+# Runtime dependencies for mixesdb — the package itself is standard-library only.
+#
+# These are only needed for mixesdb_search_tracklists.ipynb:
+pandas
+jupyter
+openpyxl

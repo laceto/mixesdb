@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "mixesdb"
+version = "0.1.0"
+description = "Scraper toolkit for MixesDB (mixesdb.com), talking directly to its MediaWiki action=api.php and action=raw endpoints."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+dependencies = [
+    # Core package is standard-library only.
+]
+
+[project.optional-dependencies]
+notebook = [
+    "pandas",
+    "jupyter",
+    "openpyxl",
+]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
