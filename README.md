@@ -111,6 +111,23 @@ python mixesdb_tracklist.py "<url>" --out tracklist.csv
 
 CSV output columns: `part, position, timestamp, artist, title, raw`.
 
+### `mixesdb_multi_tracklists.py` — search + tracklists for a list of DJs
+
+```
+python mixesdb_multi_tracklists.py
+python mixesdb_multi_tracklists.py "Nick Curly" "Sonja Moonear" --limit 50
+python mixesdb_multi_tracklists.py "Barem" --out data/barem_tracklists.csv
+```
+
+Loops the same search → `get_tracklist()` flow as
+`mixesdb_search_tracklists.ipynb` over multiple queries instead of one, and
+writes every track from every DJ into a single combined CSV. With no
+positional queries given, it runs the DJ list from the notebook's query cell
+(`Nick Curly`, `Sonja Moonear`, `Barem`, `Karotte`, `Dan Ghenacia`,
+`Tania Vulcano`, `Music on`).
+
+CSV output columns: `query, mix_title, mix_url, part, position, timestamp, artist, title, raw`.
+
 ### `mixesdb_search_tracklists.ipynb` — interactive search → tracklists
 
 Imports `search()` and `get_tracklist()` directly from the `mixesdb` package
@@ -139,6 +156,7 @@ mixesdb/                          # the library — search, category, tracklist 
 mixesdb_scraper.py                # CLI: full-text search
 mixesdb_category.py               # CLI: list category members
 mixesdb_tracklist.py              # CLI: scrape one mix's tracklist
+mixesdb_multi_tracklists.py       # CLI: search + tracklists for a list of DJs (combined CSV)
 mixesdb_search_tracklists.ipynb   # notebook: interactive search → tracklists (XLSX output)
 tests/                            # pytest suite for the pure-logic functions
 data/                             # generated CSV/XLSX output (gitignored)
