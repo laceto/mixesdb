@@ -15,8 +15,6 @@ on:
         description: "Max number of matching mixes"
         default: "200"
         required: true
-  schedule:
-    - cron: "17 4 * * 1" # weekly, Monday 04:17 UTC
 
 permissions:
   contents: write
@@ -29,8 +27,8 @@ jobs:
   search:
     runs-on: ubuntu-latest
     env:
-      QUERY: ${{ inputs.query || 'tresor' }}
-      LIMIT: ${{ inputs.limit || '200' }}
+      QUERY: ${{ inputs.query }}
+      LIMIT: ${{ inputs.limit }}
     steps:
       - uses: actions/checkout@v4
 
