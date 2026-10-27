@@ -1,0 +1,61 @@
+name: MixesDB search - tresor
+
+# Searches MixesDB for mixes with "tresor" in the title, fetches every match's
+# tracklist via mixesdb_multi_tracklists.py, and commits the combined CSV to
+# data/tresor_tracklists.csv.
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Search keyword(s)"
+        default: "tresor"
+        required: true
+      limit:
+        description: "Max number of matching mixes"
+        default: "200"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tresor-search
+  cancel-in-progress: false
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    env:
+      QUERY: ${{ inputs.query }}
+      LIMIT: ${{ inputs.limit }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Search MixesDB and fetch tracklists
+        run: |
+          mkdir -p data
+          slug=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/^_//; s/_$//')
+          echo "OUT=data/${slug}_tracklists.csv" >> "$GITHUB_ENV"
+          python mixesdb_multi_tracklists.py "$QUERY" --limit "$LIMIT" --out "data/${slug}_tracklists.csv"
+
+      - name: Commit and push CSV
+        run: |
+          if [ ! -f "$OUT" ]; then
+            echo "No CSV produced (no tracklists found); nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # *.csv is gitignored, so force-add the output file.
+          git add -f "$OUT"
+          if git diff --cached --quiet; then
+            echo "CSV unchanged; nothing to commit."
+            exit 0
+          fi
+          git commit -m "data: update MixesDB '$QUERY' tracklists"
+          git push
