@@ -144,6 +144,15 @@ broad search doesn't fire many rapid-fire requests at the server.
 
 Run with the venv's kernel selected: `jupyter notebook mixesdb_search_tracklists.ipynb`.
 
+## GitHub Action: `tresor` search
+
+`.github/workflows/tresor-search.yml` runs `mixesdb_multi_tracklists.py "tresor"`
+on GitHub's runners and commits the result to `data/tresor_tracklists.csv`
+(force-added, since `*.csv` is gitignored). It runs weekly (Monday 04:17 UTC)
+and can be triggered manually from the Actions tab ("Run workflow"), where the
+keyword and `--limit` (default 200) can be overridden; the output file is
+named after the keyword (`data/<keyword>_tracklists.csv`).
+
 ## Project structure
 
 ```
