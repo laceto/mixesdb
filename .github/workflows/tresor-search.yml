@@ -15,6 +15,10 @@ on:
         description: "Max number of matching mixes"
         default: "200"
         required: true
+      debug:
+        description: "Log why each skipped mix yielded no tracks"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,6 +33,7 @@ jobs:
     env:
       QUERY: ${{ inputs.query }}
       LIMIT: ${{ inputs.limit }}
+      DEBUG_FLAG: ${{ inputs.debug && '--debug' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,7 +46,7 @@ jobs:
           mkdir -p data
           slug=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/^_//; s/_$//')
           echo "OUT=data/${slug}_tracklists.csv" >> "$GITHUB_ENV"
-          python mixesdb_multi_tracklists.py "$QUERY" --limit "$LIMIT" --out "data/${slug}_tracklists.csv"
+          python mixesdb_multi_tracklists.py "$QUERY" --limit "$LIMIT" --out "data/${slug}_tracklists.csv" $DEBUG_FLAG
 
       - name: Commit and push CSV
         run: |
