@@ -9,9 +9,8 @@ import json
 import re
 import time
 import urllib.parse
-import urllib.request
 
-from ._shared import API_URL, USER_AGENT, title_to_url
+from ._shared import API_URL, fetch_text, title_to_url
 
 MAX_PER_REQUEST = 50  # MediaWiki API srlimit cap for anonymous users
 
@@ -54,10 +53,7 @@ def search(query: str, limit: int = 20, namespace: int = 0, strict: bool = True)
             "format": "json",
         }
         url = f"{API_URL}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+        data = json.loads(fetch_text(url))
 
         hits = data.get("query", {}).get("search", [])
         if not hits:

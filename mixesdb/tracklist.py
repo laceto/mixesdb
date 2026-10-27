@@ -9,9 +9,8 @@ pages use, where entries carry no "#" ("[12] Artist - Title").
 
 import re
 import urllib.parse
-import urllib.request
 
-from ._shared import USER_AGENT
+from ._shared import fetch_text
 
 TIMESTAMP_RE = re.compile(r"^\[([0-9?:]+)\]\s*")
 WIKILINK_RE = re.compile(r"\[\[(?:[^\]|]*\|)?([^\]]+)\]\]")
@@ -31,9 +30,7 @@ def url_to_title(url: str) -> str:
 def fetch_raw_wikitext(title: str) -> str:
     params = {"title": title, "action": "raw"}
     api_url = f"https://www.mixesdb.com/w/index.php?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(api_url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.read().decode("utf-8")
+    return fetch_text(api_url)
 
 
 def clean_wikitext(text: str) -> str:
