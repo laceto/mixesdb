@@ -39,3 +39,36 @@ def test_parse_tracklist_extracts_part_and_tracks():
 
 def test_parse_tracklist_returns_empty_list_without_section():
     assert parse_tracklist("No tracklist here.") == []
+
+
+LIST_WIKITEXT = """
+== Tracklist ==
+<list>
+;Version 1
+[00] ?
+...
+[07] Markus Homm - Transposer [Highgrade - 134D]
+--
+[0:14] Igor Krsmanovic - Morocco
+</list>
+[[Category:2010]]
+[[Category:Marco Carola]]
+"""
+
+
+def test_parse_tracklist_handles_list_format_without_hash():
+    tracks = parse_tracklist(LIST_WIKITEXT)
+    assert [t["raw"] for t in tracks] == [
+        "?",
+        "Markus Homm - Transposer [Highgrade - 134D]",
+        "Igor Krsmanovic - Morocco",
+    ]
+    assert [t["timestamp"] for t in tracks] == ["00", "07", "0:14"]
+    assert [t["position"] for t in tracks] == [1, 2, 3]
+    assert tracks[1]["part"] == "Version 1"
+    assert tracks[1]["artist"] == "Markus Homm"
+
+
+def test_parse_tracklist_empty_list_and_categories_yield_no_tracks():
+    wikitext = "== Tracklist ==\n<list>\n</list>\n[[Category:2006]]\n[[Category:Marco Carola]]\n"
+    assert parse_tracklist(wikitext) == []

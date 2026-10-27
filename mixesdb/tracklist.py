@@ -2,8 +2,9 @@
 
 Fetches the page's raw wikitext (via action=raw) and parses the
 "== Tracklist ==" section into structured track entries. Handles pages
-split into parts/sets (";Part 1", ";Part 2", ...) and timestamp-prefixed
-entries ("# [12:34] Artist - Title").
+split into parts/sets (";Part 1", ";Part 2", ...), numbered entries
+("# [12:34] Artist - Title"), and the <list>...</list> format most MixesDB
+pages use, where entries carry no "#" ("[12] Artist - Title").
 """
 
 import re
@@ -16,6 +17,9 @@ TIMESTAMP_RE = re.compile(r"^\[([0-9?:]+)\]\s*")
 WIKILINK_RE = re.compile(r"\[\[(?:[^\]|]*\|)?([^\]]+)\]\]")
 TEMPLATE_RE = re.compile(r"\{\{[^}]*\}\}")
 BOLD_ITALIC_RE = re.compile(r"'{2,3}")
+CATEGORY_RE = re.compile(r"^\[\[Category:", re.IGNORECASE)
+# Placeholder lines between entries in <list> tracklists ("...", "--").
+FILLER_LINES = {"...", "…", "--"}
 
 
 def url_to_title(url: str) -> str:
@@ -57,10 +61,19 @@ def parse_tracklist(wikitext: str) -> list[dict]:
     tracks = []
     current_part = None
     index_in_part = 0
+    in_list = False
 
     for line in section.splitlines():
         line = line.strip()
-        if not line:
+        if not line or line in FILLER_LINES or CATEGORY_RE.match(line):
+            continue
+
+        lowered = line.lower()
+        if lowered.startswith("<list"):
+            in_list = True
+            continue
+        if lowered.startswith("</list"):
+            in_list = False
             continue
 
         if line.startswith(";"):
@@ -70,30 +83,35 @@ def parse_tracklist(wikitext: str) -> list[dict]:
 
         if line.startswith("#"):
             content = line.lstrip("#").strip()
-            index_in_part += 1
+        elif TIMESTAMP_RE.match(line) or (in_list and not line.startswith(("<", "{{", "[["))):
+            content = line
+        else:
+            continue
 
-            ts_match = TIMESTAMP_RE.match(content)
-            timestamp = ts_match.group(1) if ts_match else ""
-            remainder = content[ts_match.end():].strip() if ts_match else content
-            remainder = clean_wikitext(remainder)
+        index_in_part += 1
 
-            artist, title = "", remainder
-            for sep in (" - ", " – ", " — "):
-                if sep in remainder:
-                    artist, title = remainder.split(sep, 1)
-                    artist, title = artist.strip(), title.strip()
-                    break
+        ts_match = TIMESTAMP_RE.match(content)
+        timestamp = ts_match.group(1) if ts_match else ""
+        remainder = content[ts_match.end():].strip() if ts_match else content
+        remainder = clean_wikitext(remainder)
 
-            tracks.append(
-                {
-                    "part": current_part or "",
-                    "position": index_in_part,
-                    "timestamp": timestamp,
-                    "artist": artist,
-                    "title": title,
-                    "raw": remainder,
-                }
-            )
+        artist, title = "", remainder
+        for sep in (" - ", " – ", " — "):
+            if sep in remainder:
+                artist, title = remainder.split(sep, 1)
+                artist, title = artist.strip(), title.strip()
+                break
+
+        tracks.append(
+            {
+                "part": current_part or "",
+                "position": index_in_part,
+                "timestamp": timestamp,
+                "artist": artist,
+                "title": title,
+                "raw": remainder,
+            }
+        )
 
     return tracks
 
