@@ -7,9 +7,8 @@ page in a category, e.g. https://www.mixesdb.com/w/Category:Richie_Hawtin
 import json
 import time
 import urllib.parse
-import urllib.request
 
-from ._shared import API_URL, USER_AGENT, title_to_url
+from ._shared import API_URL, fetch_text, title_to_url
 
 MAX_PER_REQUEST = 500
 
@@ -42,9 +41,7 @@ def list_category_members(category: str, limit: int | None = None) -> list[dict]
             params["cmcontinue"] = cmcontinue
 
         url = f"{API_URL}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+        data = json.loads(fetch_text(url))
 
         for m in data.get("query", {}).get("categorymembers", []):
             members.append({"title": m["title"], "url": title_to_url(m["title"])})

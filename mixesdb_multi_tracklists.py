@@ -16,6 +16,7 @@ import csv
 import sys
 
 import re
+import time
 
 from mixesdb import get_tracklist, search
 from mixesdb.tracklist import extract_tracklist_section, fetch_raw_wikitext, url_to_title
@@ -41,6 +42,10 @@ DEFAULT_QUERIES = [
     "Music on",
 ]
 
+# Pause between per-mix tracklist fetches so a large search (hundreds of mixes)
+# doesn't hammer the server, which can reset connections under rapid requests.
+REQUEST_DELAY = 0.2
+
 FIELDNAMES = ["query", "mix_title", "mix_url", "part", "position", "timestamp", "artist", "title", "raw"]
 
 
@@ -64,6 +69,7 @@ def collect_tracklists(queries: list[str], limit: int, strict: bool, debug: bool
         print(f"Found {len(results)} mix(es) with '{query}' in the title.")
 
         for r in results:
+            time.sleep(REQUEST_DELAY)
             try:
                 tracks = get_tracklist(r["url"])
             except Exception as e:
