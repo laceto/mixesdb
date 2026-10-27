@@ -68,6 +68,9 @@ tracks = get_tracklist(results[0]["url"])
 - `get_tracklist(url: str) -> list[dict]`
   Fetches a mix page's raw wikitext (`action=raw`) and returns
   `{part, position, timestamp, artist, title, raw}` dicts, one per track.
+  Handles both `#`-numbered entries and the `<list>...</list>` format most
+  MixesDB pages use (entries like `[12] Artist - Title` with no `#`; `...`/`--`
+  filler lines and `[[Category:...]]` links are ignored).
   Handles pages split into parts/sets (`;Part 1`, `;Part 2`, ...),
   `[hh:mm]`-style timestamps, and strips wiki markup (`[[links]]`,
   `{{templates}}`, `''italics''`). `artist`/`title` are a best-effort split
@@ -128,6 +131,10 @@ positional queries given, it runs the DJ list from the notebook's query cell
 
 CSV output columns: `query, mix_title, mix_url, part, position, timestamp, artist, title, raw`.
 
+Mixes whose page yields no tracks are logged as `Skipped (no tracks parsed)`;
+add `--debug` to re-fetch each skipped page and print why (no Tracklist
+section, or the section's first lines).
+
 ### `mixesdb_search_tracklists.ipynb` — interactive search → tracklists
 
 Imports `search()` and `get_tracklist()` directly from the `mixesdb` package
@@ -149,7 +156,7 @@ Run with the venv's kernel selected: `jupyter notebook mixesdb_search_tracklists
 `.github/workflows/tresor-search.yml` runs `mixesdb_multi_tracklists.py "tresor"`
 on GitHub's runners and commits the result to `data/tresor_tracklists.csv`
 (force-added, since `*.csv` is gitignored). It only runs when triggered
-manually from the Actions tab ("Run workflow"), where the keyword and `--limit` (default 200) can be overridden; the output file is
+manually from the Actions tab ("Run workflow"), where the keyword and `--limit` (default 200) can be overridden and `debug` turned on; the output file is
 named after the keyword (`data/<keyword>_tracklists.csv`).
 
 ## Project structure

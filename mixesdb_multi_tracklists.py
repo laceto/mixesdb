@@ -15,7 +15,10 @@ import argparse
 import csv
 import sys
 
+import re
+
 from mixesdb import get_tracklist, search
+from mixesdb.tracklist import extract_tracklist_section, fetch_raw_wikitext, url_to_title
 
 # Windows consoles often use a legacy codepage (e.g. CP850) that can't encode
 # accented characters common in mix titles (e.g. "Sven Väth"), which raises
@@ -41,7 +44,18 @@ DEFAULT_QUERIES = [
 FIELDNAMES = ["query", "mix_title", "mix_url", "part", "position", "timestamp", "artist", "title", "raw"]
 
 
-def collect_tracklists(queries: list[str], limit: int, strict: bool) -> list[dict]:
+def describe_skip(url: str) -> str:
+    """Explain why a mix page yielded no tracks (costs one extra request)."""
+    wikitext = fetch_raw_wikitext(url_to_title(url))
+    section = extract_tracklist_section(wikitext)
+    if not section.strip():
+        headings = re.findall(r"^=+[^=\n]+=+\s*$", wikitext, re.MULTILINE)
+        return f"no '== Tracklist ==' section; headings: {headings}"
+    lines = [line for line in section.splitlines() if line.strip()][:6]
+    return f"Tracklist section found but no tracks parsed; first lines: {lines}"
+
+
+def collect_tracklists(queries: list[str], limit: int, strict: bool, debug: bool = False) -> list[dict]:
     all_tracks = []
 
     for query in queries:
@@ -57,6 +71,12 @@ def collect_tracklists(queries: list[str], limit: int, strict: bool) -> list[dic
                 continue
 
             if not tracks:
+                print(f"  Skipped (no tracks parsed): {r['title']}")
+                if debug:
+                    try:
+                        print(f"    {describe_skip(r['url'])}")
+                    except Exception as e:
+                        print(f"    Could not inspect page: {e}")
                 continue
 
             for t in tracks:
@@ -85,11 +105,16 @@ def main():
         action="store_true",
         help="Keep MediaWiki's raw relevance results even if they don't literally contain the search word(s)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="For each skipped mix, re-fetch the page and print why no tracks were parsed",
+    )
     args = parser.parse_args()
 
     queries = args.queries or DEFAULT_QUERIES
 
-    all_tracks = collect_tracklists(queries, limit=args.limit, strict=not args.no_filter)
+    all_tracks = collect_tracklists(queries, limit=args.limit, strict=not args.no_filter, debug=args.debug)
 
     if not all_tracks:
         print("\nNo tracklists found for any query.")
