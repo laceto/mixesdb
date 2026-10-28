@@ -151,13 +151,17 @@ broad search doesn't fire many rapid-fire requests at the server.
 
 Run with the venv's kernel selected: `jupyter notebook mixesdb_search_tracklists.ipynb`.
 
-## GitHub Action: `tresor` search
+## GitHub Action: MixesDB search
 
-`.github/workflows/tresor-search.yml` runs `mixesdb_multi_tracklists.py "tresor"`
-on GitHub's runners and commits the result to `data/tresor_tracklists.csv`
-(force-added, since `*.csv` is gitignored). It only runs when triggered
-manually from the Actions tab ("Run workflow"), where the keyword and `--limit` (default 200) can be overridden and `debug` turned on; the output file is
-named after the keyword (`data/<keyword>_tracklists.csv`).
+`.github/workflows/tresor-search.yml` runs `mixesdb_multi_tracklists.py` on
+GitHub's runners and commits one CSV per keyword to
+`data/<keyword>_tracklists.csv` (force-added, since `*.csv` is gitignored).
+It only runs when triggered manually from the Actions tab ("Run workflow"):
+`query` (default `tresor`) takes one keyword or several comma-separated
+(e.g. `Ben Klock, DVS1, Len Faki`), `limit` sets `--limit` (default 200) and
+`debug` turns on `--debug`. Filenames are ASCII-slugged (`Onur Özer` ->
+`onur_ozer`). If one search fails the others still run and are committed, and
+the job then fails listing the failed keywords.
 
 ## Project structure
 

@@ -1,14 +1,15 @@
 name: MixesDB search - tresor
 
-# Searches MixesDB for mixes with "tresor" in the title, fetches every match's
-# tracklist via mixesdb_multi_tracklists.py, and commits the combined CSV to
-# data/tresor_tracklists.csv.
+# Searches MixesDB for mixes with the given keyword(s) in the title (default
+# "tresor"), fetches every match's tracklist via mixesdb_multi_tracklists.py,
+# and commits one CSV per keyword to data/<keyword>_tracklists.csv.
+# Several keywords can be given comma-separated, e.g. "Ben Klock, DVS1".
 
 on:
   workflow_dispatch:
     inputs:
       query:
-        description: "Search keyword(s)"
+        description: "Search keyword(s); comma-separate to run several searches, one CSV each"
         default: "tresor"
         required: true
       limit:
@@ -44,23 +45,38 @@ jobs:
       - name: Search MixesDB and fetch tracklists
         run: |
           mkdir -p data
-          slug=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/^_//; s/_$//')
-          echo "OUT=data/${slug}_tracklists.csv" >> "$GITHUB_ENV"
-          python mixesdb_multi_tracklists.py "$QUERY" --limit "$LIMIT" --out "data/${slug}_tracklists.csv" $DEBUG_FLAG
+          failed=()
+          IFS=',' read -ra queries <<< "$QUERY"
+          for q in "${queries[@]}"; do
+            q=$(echo "$q" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+            [ -z "$q" ] && continue
+            # ASCII slug for the filename ("Onur Özer" -> onur_ozer)
+            slug=$(python -c 'import re, sys, unicodedata
+          s = unicodedata.normalize("NFKD", sys.argv[1]).encode("ascii", "ignore").decode().lower()
+          print(re.sub(r"[^a-z0-9]+", "_", s).strip("_"))' "$q")
+            echo "::group::$q -> data/${slug}_tracklists.csv"
+            python mixesdb_multi_tracklists.py "$q" --limit "$LIMIT" --out "data/${slug}_tracklists.csv" $DEBUG_FLAG \
+              || { echo "::error::search for '$q' failed"; failed+=("$q"); }
+            echo "::endgroup::"
+          done
+          # Commit whatever succeeded, then fail the job at the end if any search failed.
+          echo "FAILED=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_ENV"
 
-      - name: Commit and push CSV
+      - name: Commit and push CSVs
         run: |
-          if [ ! -f "$OUT" ]; then
-            echo "No CSV produced (no tracklists found); nothing to commit."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # *.csv is gitignored, so force-add the output file.
-          git add -f "$OUT"
+          # *.csv is gitignored, so force-add the output files.
+          git add -f data/*.csv
           if git diff --cached --quiet; then
-            echo "CSV unchanged; nothing to commit."
-            exit 0
+            echo "No CSV changes; nothing to commit."
+          else
+            git commit -m "data: update MixesDB '$QUERY' tracklists"
+            git push
           fi
-          git commit -m "data: update MixesDB '$QUERY' tracklists"
-          git push
+
+      - name: Report failed searches
+        if: env.FAILED != ''
+        run: |
+          echo "::error::These searches failed: $FAILED"
+          exit 1
