@@ -163,6 +163,29 @@ It only runs when triggered manually from the Actions tab ("Run workflow"):
 `onur_ozer`). If one search fails the others still run and are committed, and
 the job then fails listing the failed keywords.
 
+## Analysis scripts (`analysis/`)
+
+Standard-library scripts that compute stats from the CSVs in `data/`. Run them
+from the repo root, e.g. `python analysis/dj_stats.py --from 2004 --to 2008`.
+Most take `--from`/`--to` (mix year) and `--djs <slug> ...` (default: the 35 DJ
+files listed in `analysis/common.py`).
+
+| Script | What it shows |
+|---|---|
+| `dj_stats.py` | Per-DJ table (mixes, tracks, % identified, distinct tracks/artists, % own music) plus the tracks and artists shared by the most DJs |
+| `year_stats.py` | Per-year mixes, tracks, % identified, tracks shared between DJs, and each year's top tracks/artists |
+| `dj_top.py` | Each DJ's most-played tracks and artists |
+| `artist_tracks.py "Artist" ...` | Every track by an artist, how many mixes, which DJs, which years |
+| `find_track.py "regex"` | Every set (any CSV) whose tracklist line matches, e.g. `"lemos.*blow it"`; `--djs-only` limits to the DJ files |
+| `venue_stats.py <slug>` | Stats for a venue/event search (`tresor`, `circoloco`, `fabric` ...): sets per year, DJs, top tracks/artists/labels; `--title-regex` drops false matches |
+| `locations.py` | Countries, cities and venues parsed from every mix title, overall and per period |
+
+Conventions: tracks and artists are matched case-insensitively ignoring
+spaces/punctuation (aliases and typos are not merged); collaborations credit
+every artist; b2b sets that appear in several DJs' files are left out of cross-DJ
+counts; and "self-plays" (a DJ's own records, aliases or remixes, per `OWN` in
+`common.py`) are left out of the cross-DJ rankings.
+
 ## Project structure
 
 ```
@@ -177,6 +200,7 @@ mixesdb_category.py               # CLI: list category members
 mixesdb_tracklist.py              # CLI: scrape one mix's tracklist
 mixesdb_multi_tracklists.py       # CLI: search + tracklists for a list of DJs (combined CSV)
 mixesdb_search_tracklists.ipynb   # notebook: interactive search → tracklists (XLSX output)
+analysis/                         # stats scripts over data/ (see "Analysis scripts")
 tests/                            # pytest suite for the pure-logic functions
 data/                             # generated CSV/XLSX output (gitignored)
 pyproject.toml
