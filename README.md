@@ -179,6 +179,7 @@ files listed in `analysis/common.py`).
 | `find_track.py "regex"` | Every set (any CSV) whose tracklist line matches, e.g. `"lemos.*blow it"`; `--djs-only` limits to the DJ files |
 | `venue_stats.py <slug>` | Stats for a venue/event search (`tresor`, `circoloco`, `fabric` ...): sets per year, DJs, top tracks/artists/labels; `--title-regex` drops false matches |
 | `locations.py` | Countries, cities and venues parsed from every mix title, overall and per period |
+| `travel.py <dj>` | Great-circle km between a DJ's dated, located gigs in date order: total, per year, longest moves, most visited cities (`--legs` lists every move) |
 
 Conventions: tracks and artists are matched case-insensitively ignoring
 spaces/punctuation (aliases and typos are not merged); collaborations credit
