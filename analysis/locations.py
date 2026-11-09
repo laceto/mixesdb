@@ -3,6 +3,7 @@
 Usage:
     python analysis/locations.py
     python analysis/locations.py --from 2004 --to 2008 --top 30
+    python analysis/locations.py --from 2025 --to 2026 --list --csv data/locations_2025_2026.csv
 
 MixesDB titles look like "2008-04-05 - DJ @ Venue, City, Country (Extra)".
 The venue is the first part after " @ "; city and country are matched against
@@ -13,6 +14,7 @@ counted once even if it appears in several CSVs.
 
 import argparse
 import collections
+import csv
 import re
 
 from common import all_slugs, force_utf8_stdout, load
@@ -93,6 +95,8 @@ def main():
     parser.add_argument("--from", dest="start", type=int)
     parser.add_argument("--to", dest="end", type=int)
     parser.add_argument("--top", type=int, default=20)
+    parser.add_argument("--list", action="store_true", help="Also print every set with its venue, city and country")
+    parser.add_argument("--csv", metavar="PATH", help="Write every set (date, dj, venue, city, country, title, url) to a CSV")
     args = parser.parse_args()
     force_utf8_stdout()
 
@@ -100,12 +104,13 @@ def main():
     for slug in all_slugs():
         for r in load(slug):
             titles.setdefault(r["mix_url"], r["mix_title"])
-    sets = []
-    for title in titles.values():
+    sets, urls = [], {}
+    for url, title in titles.items():
         year = int(title[:4]) if title[:4].isdigit() else None
         if (args.start and (not year or year < args.start)) or (args.end and (not year or year > args.end)):
             continue
         sets.append((title, year, *locate(title)))
+        urls[title] = url
 
     with_venue = sum(" @ " in s[0] for s in sets)
     located = [s for s in sets if s[4]]
@@ -126,6 +131,24 @@ def main():
         c = collections.Counter(s[4] for s in located if s[1] and lo <= s[1] <= hi)
         if sum(c.values()):
             print(f"{lo}-{hi}", *[c[t] for t in top], sep="\t")
+
+    rows = [split_title(s[0]) + (s[2] or "", s[3] or "", s[4] or "", s[0], urls[s[0]]) for s in sorted(sets)]
+    if args.list:
+        print("\ndate\tdj\tvenue\tcity\tcountry")
+        for date, dj, venue, city, country, _, _ in rows:
+            print(f"{date}\t{dj}\t{venue}\t{city}\t{country}")
+    if args.csv:
+        with open(args.csv, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            writer.writerow(["date", "dj", "venue", "city", "country", "mix_title", "mix_url"])
+            writer.writerows(rows)
+        print(f"\nSaved {len(rows)} sets to {args.csv}")
+
+
+def split_title(title: str) -> tuple[str, str]:
+    """'2025-06-22 - Magda @ Venue, City' -> ('2025-06-22', 'Magda')."""
+    date, _, rest = title.partition(" - ")
+    return date, rest.split(" @ ")[0].strip()
 
 
 if __name__ == "__main__":

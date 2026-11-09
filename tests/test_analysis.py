@@ -43,3 +43,12 @@ def test_locate_reads_city_country_and_implied_venues():
     assert locate("2005-08-21 - Tania Vulcano @ Circo Loco, DC10, Ibiza - Essential Mix")[1:] == ("Ibiza", "Spain")
     assert locate("2013-03-23 - Luciano @ Ultra Music Festival, WMC")[1:] == ("Miami", "USA")
     assert locate("2008-05-24 - Nick Curly - Clubnight") == (None, None, None)
+
+
+def test_travel_km_and_city_hints():
+    from travel import COORDS, city_of, km
+
+    assert round(km(COORDS["Berlin"], COORDS["London"])) in range(920, 940)
+    assert km(COORDS["Ibiza"], COORDS["Ibiza"]) == 0
+    assert city_of("2008-12-20 - Richie Hawtin @ Womb, Tokyo, Japan") == "Tokyo"
+    assert city_of("2000-06-22 - Richie Hawtin @ Distillery") == "Leipzig"
